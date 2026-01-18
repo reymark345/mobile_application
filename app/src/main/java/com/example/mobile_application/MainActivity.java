@@ -17,7 +17,7 @@ public class MainActivity extends AppCompatActivity {
     private final Runnable goHomeRunnable = new Runnable() {
         @Override
         public void run() {
-            Intent intent = new Intent(MainActivity.this, HomeActivity.class);
+            Intent intent = new Intent(MainActivity.this, Dashboard.class);
             startActivity(intent);
             finish(); // prevents going back to splash
         }
@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Show splash for 2 seconds (2000 ms)
-        handler.postDelayed(goHomeRunnable, 3000);
+        handler.postDelayed(goHomeRunnable, 500);
     }
 
     @Override

@@ -4,4 +4,56 @@
     <color name="white">#FFFFFFFF</color>
     <color name="yellow">#F9D332</color>
     <color name="green">#2E7D32</color>
+
+
+    <color name ="primary">#6A7CFF</color>
+    <color name="background">#F7F7FA</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="primary_text">#565B65</color>
+    <color name="secondary_text">#9B9A9D</color>
+    <color name="dashboard_item_1">#2CC2EA</color>
+    <color name="dashboard_item_2">#4DE9C9</color>
+    <color name="dashboard_item_3">#72A4FF</color>
+    <color name="dashboard_item_4">#8B72FF</color>
+    <color name="validation">#FF03DAC5</color>
+    <color name="syncing">#8B72FF</color>
+    <color name="lightGrey">#EAEAEA</color>
+    <color name="lightGreen">#8BC34A</color>
+    <color name="textHeadline">#434343</color>
+    <color name="textDescription">#686868</color>
+    <color name="backgroundDisplay">#F7F7FA</color>
+
+    <!-- DE colors -->
+    <color name="colorOnPrimaryDemo">#fff</color>
+    <color name="colorPrimaryDemo">#554911</color>
+    <color name="colorPrimaryLightDemo">#FFFFFF</color>
+    <!--    <color name="colorPrimaryLightDemo">#EEE3AB</color>-->
+    <color name="colorAccentDemo">#665815</color>
+
+
+    <color name="dark_one">#dcdcdc</color>
+    <color name="dark_two">#dcdcdc</color>
+    <color name="dark_three">#dcdcdc</color>
+    <color name="dark_four">#dcdcdc</color>
+
+    <color name="orange_one">#e65252</color>
+    <color name="orange_two">#e65252</color>
+    <color name="orange_three">#e65252</color>
+    <color name="orange_four">#e65252</color>
+    <color name="colorEdit">#DEC20B</color>
+
+
+    <array name="active">
+        <item>@color/orange_one</item>
+        <item>@color/orange_two</item>
+        <item>@color/orange_three</item>
+        <item>@color/orange_four</item>
+    </array>
+
+    <array name="inactive">
+        <item>@color/dark_one</item>
+        <item>@color/dark_two</item>
+        <item>@color/dark_three</item>
+        <item>@color/dark_four</item>
+    </array>
 </resources>

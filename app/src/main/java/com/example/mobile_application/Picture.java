@@ -8,8 +8,6 @@ import android.graphics.ImageDecoder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.MediaStore;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -25,7 +23,7 @@ import androidx.core.content.ContextCompat;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-public class HomeActivity extends AppCompatActivity {
+public class Picture extends AppCompatActivity {
 
     private ImageView imgPreview;
     private Button btnCapture, btnSave;
@@ -71,7 +69,7 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_home);
+        setContentView(R.layout.activity_picture);
 
         imgPreview = findViewById(R.id.imgPreview);
         btnCapture = findViewById(R.id.btnCapture);
