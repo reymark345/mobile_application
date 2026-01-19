@@ -28,7 +28,7 @@ public class Picture extends AppCompatActivity {
 
     private ImageView imgPreview;
     private Button btnCapture, btnSave, btnSync;
-    private ImageButton btnReset;
+
 
     private Bitmap capturedBitmap;
 
@@ -48,7 +48,6 @@ public class Picture extends AppCompatActivity {
                         capturedBitmap = (Bitmap) extras.get("data"); // thumbnail bitmap
                         imgPreview.setImageBitmap(capturedBitmap);
                         btnSync.setVisibility(android.view.View.VISIBLE);
-                        btnReset.setVisibility(android.view.View.VISIBLE);
                     } else {
                         Toast.makeText(this, "No image captured.", Toast.LENGTH_SHORT).show();
                     }
@@ -64,7 +63,6 @@ public class Picture extends AppCompatActivity {
                             capturedBitmap = loadBitmapFromUri(imageUri);
                             imgPreview.setImageBitmap(capturedBitmap);
                             btnSync.setVisibility(android.view.View.VISIBLE);
-                            btnReset.setVisibility(android.view.View.VISIBLE);
                         } catch (IOException e) {
                             Toast.makeText(this, "Failed to load image.", Toast.LENGTH_SHORT).show();
                         }
@@ -81,13 +79,11 @@ public class Picture extends AppCompatActivity {
         btnCapture = findViewById(R.id.btnCapture);
         btnSave = findViewById(R.id.btnSave);
         btnSync = findViewById(R.id.btnSync);
-        btnReset = findViewById(R.id.btnReset);
 
         dbHelper = new ImageDbHelper(this);
 
         btnCapture.setOnClickListener(v -> showImageSourceDialog());
         btnSave.setOnClickListener(v -> saveToSqlite());
-        btnReset.setOnClickListener(v -> resetImageViewer());
     }
 
     private void showImageSourceDialog() {
@@ -233,7 +229,6 @@ public class Picture extends AppCompatActivity {
     private void resetImageViewer() {
         imgPreview.setImageBitmap(null);
         btnSync.setVisibility(android.view.View.GONE);
-//        btnReset.setVisibility(android.view.View.GONE);
         capturedBitmap = null;
     }
 

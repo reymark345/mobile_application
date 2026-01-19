@@ -43,4 +43,52 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         values.put(COL_CREATED_AT, System.currentTimeMillis());
         return db.insert(TABLE_IMAGES, null, values);
     }
+
+    public java.util.List<CapturedImage> getAllImages() {
+        SQLiteDatabase db = getReadableDatabase();
+        String[] cols = {COL_ID, COL_IMAGE, COL_CREATED_AT};
+        android.database.Cursor cursor = db.query(
+                TABLE_IMAGES,
+                cols,
+                null,
+                null,
+                null,
+                null,
+                COL_CREATED_AT + " DESC"
+        );
+
+        java.util.List<CapturedImage> items = new java.util.ArrayList<>();
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                long id = cursor.getLong(cursor.getColumnIndexOrThrow(COL_ID));
+                byte[] blob = cursor.getBlob(cursor.getColumnIndexOrThrow(COL_IMAGE));
+                long createdAt = cursor.getLong(cursor.getColumnIndexOrThrow(COL_CREATED_AT));
+                items.add(new CapturedImage(id, blob, createdAt));
+            }
+            cursor.close();
+        }
+        return items;
+    }
+
+    public boolean deleteImage(long id) {
+        SQLiteDatabase db = getWritableDatabase();
+        int deleted = db.delete(TABLE_IMAGES, COL_ID + " = ?", new String[]{String.valueOf(id)});
+        return deleted > 0;
+    }
+
+    public int getImagesCount() {
+        SQLiteDatabase db = getReadableDatabase();
+        android.database.Cursor cursor = db.rawQuery(
+                "SELECT COUNT(" + COL_ID + ") FROM " + TABLE_IMAGES,
+                null
+        );
+        int count = 0;
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                count = cursor.getInt(0);
+            }
+            cursor.close();
+        }
+        return count;
+    }
 }

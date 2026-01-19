@@ -21,6 +21,9 @@
         android:theme="@style/Theme.Mobile_application"
         tools:targetApi="31">
         <activity
+            android:name=".CapturedMangoes"
+            android:exported="false" />
+        <activity
             android:name=".Dashboard"
             android:exported="false" />
         <activity
