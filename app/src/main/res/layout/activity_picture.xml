@@ -28,7 +28,7 @@
         android:id="@+id/btnCapture"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="50dp"
+        android:layout_marginTop="20dp"
         android:text="Capture Image"
         android:background="@drawable/btn_green"
         app:layout_constraintEnd_toEndOf="parent"
@@ -40,24 +40,28 @@
         android:id="@+id/btnSave"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:text="Save to Offline"
+        android:layout_marginTop="8dp"
         android:background="@drawable/btn_green"
-        app:layout_constraintTop_toBottomOf="@id/btnCapture"
-        app:layout_constraintStart_toStartOf="parent"
+        android:text="Save to Offline"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="30dp"/>
+        app:layout_constraintHorizontal_bias="0.504"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btnCapture" />
 
     <Button
         android:id="@+id/btnSync"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:text="Sync Now"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="10dp"
         android:background="@drawable/btn_green"
-        app:layout_constraintTop_toBottomOf="@id/btnSave"
-        app:layout_constraintStart_toStartOf="parent"
+        android:text="Sync Now"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="30dp"/>
-
+        app:layout_constraintHorizontal_bias="0.504"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btnSave"
+        app:layout_constraintVertical_bias="0.0" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
