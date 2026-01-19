@@ -10,6 +10,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -26,7 +27,8 @@ import java.io.IOException;
 public class Picture extends AppCompatActivity {
 
     private ImageView imgPreview;
-    private Button btnCapture, btnSave;
+    private Button btnCapture, btnSave, btnSync;
+    private ImageButton btnReset;
 
     private Bitmap capturedBitmap;
 
@@ -45,6 +47,8 @@ public class Picture extends AppCompatActivity {
                     if (extras != null && extras.get("data") instanceof Bitmap) {
                         capturedBitmap = (Bitmap) extras.get("data"); // thumbnail bitmap
                         imgPreview.setImageBitmap(capturedBitmap);
+                        btnSync.setVisibility(android.view.View.VISIBLE);
+                        btnReset.setVisibility(android.view.View.VISIBLE);
                     } else {
                         Toast.makeText(this, "No image captured.", Toast.LENGTH_SHORT).show();
                     }
@@ -59,6 +63,8 @@ public class Picture extends AppCompatActivity {
                         try {
                             capturedBitmap = loadBitmapFromUri(imageUri);
                             imgPreview.setImageBitmap(capturedBitmap);
+                            btnSync.setVisibility(android.view.View.VISIBLE);
+                            btnReset.setVisibility(android.view.View.VISIBLE);
                         } catch (IOException e) {
                             Toast.makeText(this, "Failed to load image.", Toast.LENGTH_SHORT).show();
                         }
@@ -74,11 +80,14 @@ public class Picture extends AppCompatActivity {
         imgPreview = findViewById(R.id.imgPreview);
         btnCapture = findViewById(R.id.btnCapture);
         btnSave = findViewById(R.id.btnSave);
+        btnSync = findViewById(R.id.btnSync);
+        btnReset = findViewById(R.id.btnReset);
 
         dbHelper = new ImageDbHelper(this);
 
         btnCapture.setOnClickListener(v -> showImageSourceDialog());
         btnSave.setOnClickListener(v -> saveToSqlite());
+        btnReset.setOnClickListener(v -> resetImageViewer());
     }
 
     private void showImageSourceDialog() {
@@ -215,9 +224,17 @@ public class Picture extends AppCompatActivity {
 
         if (id != -1) {
             Toast.makeText(this, "Saved to SQLite (ID: " + id + ")", Toast.LENGTH_SHORT).show();
+            resetImageViewer();
         } else {
             Toast.makeText(this, "Save failed.", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void resetImageViewer() {
+        imgPreview.setImageBitmap(null);
+        btnSync.setVisibility(android.view.View.GONE);
+//        btnReset.setVisibility(android.view.View.GONE);
+        capturedBitmap = null;
     }
 
     private byte[] bitmapToPngBytes(Bitmap bitmap) {
