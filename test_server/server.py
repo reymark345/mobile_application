@@ -62,8 +62,13 @@ if __name__ == '__main__':
     print("\n" + "="*50)
     print("Flask Test Server for Mango Image Upload")
     print("="*50)
-    print(f"Upload endpoint: http://172.31.246.40:5000/api/upload")
-    print(f"Health check:    http://172.31.246.40:5000/health")
+    # print(f"Upload endpoint: http://172.31.246.40:5000/api/upload")
+    # print(f"Health check:    http://172.31.246.40:5000/health")
+    print(f"Upload endpoint: http://192.168.254.108:5000/api/upload")
+    print(f"Health check:    http://192.168.254.108:5000/health")
+
+
+    
     print(f"Images saved to: ./{UPLOAD_FOLDER}/")
     print("="*50 + "\n")
     

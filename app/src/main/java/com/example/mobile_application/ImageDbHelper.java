@@ -8,11 +8,12 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class ImageDbHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "thesis_images.db";
-    private static final int DB_VERSION = 2;
+    private static final int DB_VERSION = 3;
 
     public static final String TABLE_IMAGES = "images";
     public static final String COL_ID = "_id";
     public static final String COL_IMAGE = "image_blob";
+    public static final String COL_THUMB = "image_thumb";
     public static final String COL_CREATED_AT = "created_at";
     public static final String COL_SYNC_STATUS = "sync_status";
 
@@ -25,6 +26,7 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         String sql = "CREATE TABLE " + TABLE_IMAGES + " ("
                 + COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COL_IMAGE + " BLOB NOT NULL, "
+                + COL_THUMB + " BLOB NOT NULL, "
                 + COL_CREATED_AT + " INTEGER NOT NULL, "
                 + COL_SYNC_STATUS + " INTEGER NOT NULL DEFAULT 0"
                 + ");";
@@ -38,10 +40,11 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    public long insertImage(byte[] imageBytes) {
+    public long insertImage(byte[] imageBytes, byte[] thumbnailBytes) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COL_IMAGE, imageBytes);
+        values.put(COL_THUMB, thumbnailBytes);
         values.put(COL_CREATED_AT, System.currentTimeMillis());
         values.put(COL_SYNC_STATUS, 0); // Not synced by default
         return db.insert(TABLE_IMAGES, null, values);
@@ -49,7 +52,8 @@ public class ImageDbHelper extends SQLiteOpenHelper {
 
     public java.util.List<CapturedImage> getAllImages() {
         SQLiteDatabase db = getReadableDatabase();
-        String[] cols = {COL_ID, COL_IMAGE, COL_CREATED_AT, COL_SYNC_STATUS};
+        // NOTE: Do not select full image blobs here; can exceed CursorWindow.
+        String[] cols = {COL_ID, COL_THUMB, COL_CREATED_AT, COL_SYNC_STATUS};
         // Only get images where sync_status = 0 (not synced)
         android.database.Cursor cursor = db.query(
                 TABLE_IMAGES,
@@ -65,14 +69,37 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         if (cursor != null) {
             while (cursor.moveToNext()) {
                 long id = cursor.getLong(cursor.getColumnIndexOrThrow(COL_ID));
-                byte[] blob = cursor.getBlob(cursor.getColumnIndexOrThrow(COL_IMAGE));
+                byte[] thumb = cursor.getBlob(cursor.getColumnIndexOrThrow(COL_THUMB));
                 long createdAt = cursor.getLong(cursor.getColumnIndexOrThrow(COL_CREATED_AT));
                 int syncStatus = cursor.getInt(cursor.getColumnIndexOrThrow(COL_SYNC_STATUS));
-                items.add(new CapturedImage(id, blob, createdAt, syncStatus == 1));
+                items.add(new CapturedImage(id, thumb, createdAt, syncStatus == 1));
             }
             cursor.close();
         }
         return items;
+    }
+
+    public byte[] getImageBlobById(long id) {
+        SQLiteDatabase db = getReadableDatabase();
+        android.database.Cursor cursor = db.query(
+                TABLE_IMAGES,
+                new String[]{COL_IMAGE},
+                COL_ID + " = ?",
+                new String[]{String.valueOf(id)},
+                null,
+                null,
+                null,
+                "1"
+        );
+
+        try {
+            if (cursor != null && cursor.moveToFirst()) {
+                return cursor.getBlob(cursor.getColumnIndexOrThrow(COL_IMAGE));
+            }
+            return null;
+        } finally {
+            if (cursor != null) cursor.close();
+        }
     }
 
     public boolean deleteImage(long id) {
@@ -83,10 +110,11 @@ public class ImageDbHelper extends SQLiteOpenHelper {
 
     public int getImagesCount() {
         SQLiteDatabase db = getReadableDatabase();
+        // Count only images that are not yet synced (sync_status = 0)
         android.database.Cursor cursor = db.rawQuery(
-                "SELECT COUNT(" + COL_ID + ") FROM " + TABLE_IMAGES,
-                null
-        );
+                "SELECT COUNT(" + COL_ID + ") FROM " + TABLE_IMAGES +
+                        " WHERE " + COL_SYNC_STATUS + " = 0",
+                null);
         int count = 0;
         if (cursor != null) {
             if (cursor.moveToFirst()) {

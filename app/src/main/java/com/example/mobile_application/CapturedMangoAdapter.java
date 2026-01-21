@@ -58,8 +58,13 @@ public class CapturedMangoAdapter extends RecyclerView.Adapter<CapturedMangoAdap
     @Override
     public void onBindViewHolder(@NonNull MangoViewHolder holder, int position) {
         CapturedImage item = items.get(position);
-        Bitmap bitmap = BitmapFactory.decodeByteArray(item.getImageBlob(), 0, item.getImageBlob().length);
-        holder.imageView.setImageBitmap(bitmap);
+        byte[] thumb = item.getThumbnailBlob();
+        if (thumb != null && thumb.length > 0) {
+            Bitmap bitmap = BitmapFactory.decodeByteArray(thumb, 0, thumb.length);
+            holder.imageView.setImageBitmap(bitmap);
+        } else {
+            holder.imageView.setImageResource(R.drawable.ic_launcher_foreground);
+        }
 
         String dateText = "Date Captured: " + dateFormat.format(new Date(item.getCreatedAt()));
         holder.dateText.setText(dateText);

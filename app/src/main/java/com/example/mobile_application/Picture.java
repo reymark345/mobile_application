@@ -225,8 +225,10 @@ public class Picture extends AppCompatActivity {
             return;
         }
 
-        byte[] imageBytes = bitmapToPngBytes(capturedBitmap);
-        long id = dbHelper.insertImage(imageBytes);
+        // Store a resized JPEG (smaller than PNG, avoids CursorWindow crash)
+        byte[] imageBytes = bitmapToJpegBytes(resizeBitmap(capturedBitmap, 1280), 85);
+        byte[] thumbBytes = bitmapToJpegBytes(resizeBitmap(capturedBitmap, 256), 75);
+        long id = dbHelper.insertImage(imageBytes, thumbBytes);
 
         if (id != -1) {
             Toast.makeText(this, "Saved to Offline", Toast.LENGTH_SHORT).show();
@@ -245,6 +247,24 @@ public class Picture extends AppCompatActivity {
     private byte[] bitmapToPngBytes(Bitmap bitmap) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+        return baos.toByteArray();
+    }
+
+    private Bitmap resizeBitmap(Bitmap src, int maxSize) {
+        int w = src.getWidth();
+        int h = src.getHeight();
+        if (w <= 0 || h <= 0) return src;
+        int maxDim = Math.max(w, h);
+        if (maxDim <= maxSize) return src;
+        float scale = (float) maxSize / (float) maxDim;
+        int nw = Math.max(1, Math.round(w * scale));
+        int nh = Math.max(1, Math.round(h * scale));
+        return Bitmap.createScaledBitmap(src, nw, nh, true);
+    }
+
+    private byte[] bitmapToJpegBytes(Bitmap bitmap, int quality) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, baos);
         return baos.toByteArray();
     }
 }

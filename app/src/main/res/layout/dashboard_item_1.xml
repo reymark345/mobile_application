@@ -21,7 +21,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_margin="@dimen/_8sdp"
-            android:src="@drawable/ic_scanner"
+            android:src="@drawable/mango_scan"
             app:tint="@color/white"/>
     </com.google.android.material.card.MaterialCardView>
 

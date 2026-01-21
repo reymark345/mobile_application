@@ -1,5 +1,11 @@
 package com.example.mobile_application;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
@@ -21,7 +27,8 @@ public class CapturedMangoes extends AppCompatActivity {
 
     private static final String TAG = "CapturedMangoes";
     // TODO: Change this URL to your cloud server endpoint
-    private static final String SYNC_URL = "http://172.31.246.40:5000/api/upload";
+
+    private static final String SYNC_URL = "http://192.168.254.108:5000/api/upload";
 
     private RecyclerView recyclerView;
     private TextView emptyState;
@@ -57,10 +64,24 @@ public class CapturedMangoes extends AppCompatActivity {
     }
 
     private void syncImageToServer(CapturedImage item) {
+        // Check internet connectivity first
+        if (!isInternetAvailable()) {
+            Toast.makeText(this, "No internet connection. Please check your network settings.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         Toast.makeText(this, "Syncing image...", Toast.LENGTH_SHORT).show();
 
         executor.execute(() -> {
             try {
+                byte[] fullImage = dbHelper.getImageBlobById(item.getId());
+                if (fullImage == null || fullImage.length == 0) {
+                    runOnUiThread(() ->
+                            Toast.makeText(this, "Sync failed: image data missing.", Toast.LENGTH_SHORT).show()
+                    );
+                    return;
+                }
+
                 URL url = new URL(SYNC_URL);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
@@ -70,7 +91,7 @@ public class CapturedMangoes extends AppCompatActivity {
                 connection.setReadTimeout(30000);
 
                 // Convert image blob to Base64
-                String base64Image = Base64.encodeToString(item.getImageBlob(), Base64.NO_WRAP);
+                String base64Image = Base64.encodeToString(fullImage, Base64.NO_WRAP);
 
                 // Create JSON payload
                 String jsonPayload = "{"
@@ -108,6 +129,31 @@ public class CapturedMangoes extends AppCompatActivity {
                 );
             }
         });
+    }
+
+    private boolean isInternetAvailable() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager == null) {
+            return false;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Network network = connectivityManager.getActiveNetwork();
+            if (network == null) {
+                return false;
+            }
+            NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(network);
+            return capabilities != null && (
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+            ) && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        } else {
+            // For older Android versions
+            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+            return networkInfo != null && networkInfo.isConnected();
+        }
     }
 
     private void loadImages() {
