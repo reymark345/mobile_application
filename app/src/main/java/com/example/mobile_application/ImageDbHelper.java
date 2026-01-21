@@ -8,12 +8,13 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class ImageDbHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "thesis_images.db";
-    private static final int DB_VERSION = 1;
+    private static final int DB_VERSION = 2;
 
     public static final String TABLE_IMAGES = "images";
     public static final String COL_ID = "_id";
     public static final String COL_IMAGE = "image_blob";
     public static final String COL_CREATED_AT = "created_at";
+    public static final String COL_SYNC_STATUS = "sync_status";
 
     public ImageDbHelper(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
@@ -24,7 +25,8 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         String sql = "CREATE TABLE " + TABLE_IMAGES + " ("
                 + COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COL_IMAGE + " BLOB NOT NULL, "
-                + COL_CREATED_AT + " INTEGER NOT NULL"
+                + COL_CREATED_AT + " INTEGER NOT NULL, "
+                + COL_SYNC_STATUS + " INTEGER NOT NULL DEFAULT 0"
                 + ");";
         db.execSQL(sql);
     }
@@ -41,17 +43,19 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
         values.put(COL_IMAGE, imageBytes);
         values.put(COL_CREATED_AT, System.currentTimeMillis());
+        values.put(COL_SYNC_STATUS, 0); // Not synced by default
         return db.insert(TABLE_IMAGES, null, values);
     }
 
     public java.util.List<CapturedImage> getAllImages() {
         SQLiteDatabase db = getReadableDatabase();
-        String[] cols = {COL_ID, COL_IMAGE, COL_CREATED_AT};
+        String[] cols = {COL_ID, COL_IMAGE, COL_CREATED_AT, COL_SYNC_STATUS};
+        // Only get images where sync_status = 0 (not synced)
         android.database.Cursor cursor = db.query(
                 TABLE_IMAGES,
                 cols,
-                null,
-                null,
+                COL_SYNC_STATUS + " = ?",
+                new String[]{"0"},
                 null,
                 null,
                 COL_CREATED_AT + " DESC"
@@ -63,7 +67,8 @@ public class ImageDbHelper extends SQLiteOpenHelper {
                 long id = cursor.getLong(cursor.getColumnIndexOrThrow(COL_ID));
                 byte[] blob = cursor.getBlob(cursor.getColumnIndexOrThrow(COL_IMAGE));
                 long createdAt = cursor.getLong(cursor.getColumnIndexOrThrow(COL_CREATED_AT));
-                items.add(new CapturedImage(id, blob, createdAt));
+                int syncStatus = cursor.getInt(cursor.getColumnIndexOrThrow(COL_SYNC_STATUS));
+                items.add(new CapturedImage(id, blob, createdAt, syncStatus == 1));
             }
             cursor.close();
         }
@@ -90,5 +95,13 @@ public class ImageDbHelper extends SQLiteOpenHelper {
             cursor.close();
         }
         return count;
+    }
+
+    public boolean updateSyncStatus(long id, boolean synced) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COL_SYNC_STATUS, synced ? 1 : 0);
+        int updated = db.update(TABLE_IMAGES, values, COL_ID + " = ?", new String[]{String.valueOf(id)});
+        return updated > 0;
     }
 }

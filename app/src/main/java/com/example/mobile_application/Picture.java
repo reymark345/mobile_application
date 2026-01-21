@@ -20,8 +20,10 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 
 public class Picture extends AppCompatActivity {
@@ -29,8 +31,8 @@ public class Picture extends AppCompatActivity {
     private ImageView imgPreview;
     private Button btnCapture, btnSave, btnSync;
 
-
     private Bitmap capturedBitmap;
+    private Uri photoUri; // URI for full-resolution camera photo
 
     private ImageDbHelper dbHelper;
 
@@ -42,15 +44,17 @@ public class Picture extends AppCompatActivity {
 
     private final ActivityResultLauncher<Intent> cameraLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    Bundle extras = result.getData().getExtras();
-                    if (extras != null && extras.get("data") instanceof Bitmap) {
-                        capturedBitmap = (Bitmap) extras.get("data"); // thumbnail bitmap
+                if (result.getResultCode() == RESULT_OK && photoUri != null) {
+                    try {
+                        // Load full-resolution image from the file
+                        capturedBitmap = loadBitmapFromUri(photoUri);
                         imgPreview.setImageBitmap(capturedBitmap);
                         btnSync.setVisibility(android.view.View.VISIBLE);
-                    } else {
-                        Toast.makeText(this, "No image captured.", Toast.LENGTH_SHORT).show();
+                    } catch (IOException e) {
+                        Toast.makeText(this, "Failed to load captured image.", Toast.LENGTH_SHORT).show();
                     }
+                } else {
+                    Toast.makeText(this, "No image captured.", Toast.LENGTH_SHORT).show();
                 }
             });
 
@@ -123,6 +127,12 @@ public class Picture extends AppCompatActivity {
     private void openCamera() {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (intent.resolveActivity(getPackageManager()) != null) {
+            // Create a temporary file for the full-resolution photo
+            File photoFile = new File(getCacheDir(), "camera_photo_" + System.currentTimeMillis() + ".jpg");
+            photoUri = FileProvider.getUriForFile(this,
+                    getPackageName() + ".fileprovider",
+                    photoFile);
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
             cameraLauncher.launch(intent);
         } else {
             Toast.makeText(this, "No camera app found.", Toast.LENGTH_SHORT).show();
@@ -219,7 +229,7 @@ public class Picture extends AppCompatActivity {
         long id = dbHelper.insertImage(imageBytes);
 
         if (id != -1) {
-            Toast.makeText(this, "Saved to SQLite (ID: " + id + ")", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Saved to Offline", Toast.LENGTH_SHORT).show();
             resetImageViewer();
         } else {
             Toast.makeText(this, "Save failed.", Toast.LENGTH_SHORT).show();

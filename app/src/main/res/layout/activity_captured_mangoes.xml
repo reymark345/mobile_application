@@ -5,35 +5,6 @@
     android:orientation="vertical"
     android:padding="12dp">
 
-    <LinearLayout
-        android:id="@+id/headerRow"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingVertical="6dp">
-
-        <TextView
-            android:id="@+id/txtHeaderTitle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Captured Mangoes"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@color/primary_text" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSyncNow"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Sync Now"
-            app:icon="@android:drawable/ic_popup_sync"
-            app:iconPadding="6dp"
-            app:iconGravity="textStart" />
-
-    </LinearLayout>
-
     <TextView
         android:id="@+id/txtEmptyState"
         android:layout_width="wrap_content"

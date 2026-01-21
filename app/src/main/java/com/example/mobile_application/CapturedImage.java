@@ -4,11 +4,13 @@ public class CapturedImage {
     private final long id;
     private final byte[] imageBlob;
     private final long createdAt;
+    private final boolean syncStatus;
 
-    public CapturedImage(long id, byte[] imageBlob, long createdAt) {
+    public CapturedImage(long id, byte[] imageBlob, long createdAt, boolean syncStatus) {
         this.id = id;
         this.imageBlob = imageBlob;
         this.createdAt = createdAt;
+        this.syncStatus = syncStatus;
     }
 
     public long getId() {
@@ -21,5 +23,9 @@ public class CapturedImage {
 
     public long getCreatedAt() {
         return createdAt;
+    }
+
+    public boolean isSynced() {
+        return syncStatus;
     }
 }

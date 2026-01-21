@@ -21,6 +21,7 @@ public class CapturedMangoAdapter extends RecyclerView.Adapter<CapturedMangoAdap
     private final List<CapturedImage> items = new ArrayList<>();
     private final DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
     private OnDeleteClickListener onDeleteClickListener;
+    private OnSyncClickListener onSyncClickListener;
 
     public void submit(List<CapturedImage> data) {
         items.clear();
@@ -34,8 +35,16 @@ public class CapturedMangoAdapter extends RecyclerView.Adapter<CapturedMangoAdap
         this.onDeleteClickListener = listener;
     }
 
+    public void setOnSyncClickListener(OnSyncClickListener listener) {
+        this.onSyncClickListener = listener;
+    }
+
     public interface OnDeleteClickListener {
         void onDeleteClick(CapturedImage item);
+    }
+
+    public interface OnSyncClickListener {
+        void onSyncClick(CapturedImage item);
     }
 
     @NonNull
@@ -60,6 +69,12 @@ public class CapturedMangoAdapter extends RecyclerView.Adapter<CapturedMangoAdap
                 onDeleteClickListener.onDeleteClick(item);
             }
         });
+
+        holder.syncButton.setOnClickListener(v -> {
+            if (onSyncClickListener != null) {
+                onSyncClickListener.onSyncClick(item);
+            }
+        });
     }
 
     @Override
@@ -71,12 +86,14 @@ public class CapturedMangoAdapter extends RecyclerView.Adapter<CapturedMangoAdap
         final ImageView imageView;
         final TextView dateText;
         final ImageView deleteButton;
+        final ImageView syncButton;
 
         MangoViewHolder(@NonNull View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.imgFood);
             dateText = itemView.findViewById(R.id.txtCcText);
             deleteButton = itemView.findViewById(R.id.btnDelete);
+            syncButton = itemView.findViewById(R.id.btnSync);
         }
     }
 }
