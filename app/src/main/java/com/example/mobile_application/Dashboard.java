@@ -14,6 +14,7 @@ public class Dashboard extends AppCompatActivity {
 
     private ImageDbHelper dbHelper;
     private TextView txtCountMangoes;
+    private TextView txtSyncData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,8 +29,10 @@ public class Dashboard extends AppCompatActivity {
 
         dbHelper = new ImageDbHelper(this);
         txtCountMangoes = findViewById(R.id.txtCountMangoes);
+        txtSyncData = findViewById(R.id.txtSyncData);
 
         updateMangoesCount();
+        updateSyncedCount();
         
         // Set click listener for dashboard_item_1
         findViewById(R.id.dashboardItem1).setOnClickListener(v -> {
@@ -41,18 +44,31 @@ public class Dashboard extends AppCompatActivity {
             Intent intent = new Intent(Dashboard.this, CapturedMangoes.class);
             startActivity(intent);
         });
+
+        findViewById(R.id.dashboardItem3).setOnClickListener(v -> {
+            Intent intent = new Intent(Dashboard.this, ClassificationResult.class);
+            startActivity(intent);
+        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         updateMangoesCount();
+        updateSyncedCount();
     }
 
     private void updateMangoesCount() {
         if (txtCountMangoes != null && dbHelper != null) {
             int count = dbHelper.getImagesCount();
             txtCountMangoes.setText(String.valueOf(count));
+        }
+    }
+
+    private void updateSyncedCount() {
+        if (txtSyncData != null && dbHelper != null) {
+            int count = dbHelper.getSyncedImagesCount();
+            txtSyncData.setText(String.valueOf(count));
         }
     }
 }

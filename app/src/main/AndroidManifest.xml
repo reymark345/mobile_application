@@ -27,6 +27,9 @@
             android:name=".CapturedMangoes"
             android:exported="false" />
         <activity
+            android:name=".ClassificationResult"
+            android:exported="false" />
+        <activity
             android:name=".Dashboard"
             android:exported="false" />
         <activity

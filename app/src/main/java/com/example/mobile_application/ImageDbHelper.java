@@ -8,12 +8,12 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class ImageDbHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "thesis_images.db";
-    private static final int DB_VERSION = 3;
+    private static final int DB_VERSION = 5;
 
     public static final String TABLE_IMAGES = "images";
     public static final String COL_ID = "_id";
     public static final String COL_IMAGE = "image_blob";
-    public static final String COL_THUMB = "image_thumb";
+    public static final String COL_IMAGE_RESULT = "image_result_blob";
     public static final String COL_CREATED_AT = "created_at";
     public static final String COL_SYNC_STATUS = "sync_status";
 
@@ -26,7 +26,7 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         String sql = "CREATE TABLE " + TABLE_IMAGES + " ("
                 + COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COL_IMAGE + " BLOB NOT NULL, "
-                + COL_THUMB + " BLOB NOT NULL, "
+                + COL_IMAGE_RESULT + " BLOB, "
                 + COL_CREATED_AT + " INTEGER NOT NULL, "
                 + COL_SYNC_STATUS + " INTEGER NOT NULL DEFAULT 0"
                 + ");";
@@ -40,11 +40,10 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    public long insertImage(byte[] imageBytes, byte[] thumbnailBytes) {
+    public long insertImage(byte[] imageBytes) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COL_IMAGE, imageBytes);
-        values.put(COL_THUMB, thumbnailBytes);
         values.put(COL_CREATED_AT, System.currentTimeMillis());
         values.put(COL_SYNC_STATUS, 0); // Not synced by default
         return db.insert(TABLE_IMAGES, null, values);
@@ -53,7 +52,8 @@ public class ImageDbHelper extends SQLiteOpenHelper {
     public java.util.List<CapturedImage> getAllImages() {
         SQLiteDatabase db = getReadableDatabase();
         // NOTE: Do not select full image blobs here; can exceed CursorWindow.
-        String[] cols = {COL_ID, COL_THUMB, COL_CREATED_AT, COL_SYNC_STATUS};
+        // We'll use a smaller thumbnail version of image_blob for list display
+        String[] cols = {COL_ID, COL_IMAGE, COL_CREATED_AT, COL_SYNC_STATUS};
         // Only get images where sync_status = 0 (not synced)
         android.database.Cursor cursor = db.query(
                 TABLE_IMAGES,
@@ -69,10 +69,10 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         if (cursor != null) {
             while (cursor.moveToNext()) {
                 long id = cursor.getLong(cursor.getColumnIndexOrThrow(COL_ID));
-                byte[] thumb = cursor.getBlob(cursor.getColumnIndexOrThrow(COL_THUMB));
+                byte[] imageBlob = cursor.getBlob(cursor.getColumnIndexOrThrow(COL_IMAGE));
                 long createdAt = cursor.getLong(cursor.getColumnIndexOrThrow(COL_CREATED_AT));
                 int syncStatus = cursor.getInt(cursor.getColumnIndexOrThrow(COL_SYNC_STATUS));
-                items.add(new CapturedImage(id, thumb, createdAt, syncStatus == 1));
+                items.add(new CapturedImage(id, imageBlob, createdAt, syncStatus == 1));
             }
             cursor.close();
         }
@@ -95,6 +95,32 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         try {
             if (cursor != null && cursor.moveToFirst()) {
                 return cursor.getBlob(cursor.getColumnIndexOrThrow(COL_IMAGE));
+            }
+            return null;
+        } finally {
+            if (cursor != null) cursor.close();
+        }
+    }
+
+    public byte[] getResultImageBlobById(long id) {
+        SQLiteDatabase db = getReadableDatabase();
+        android.database.Cursor cursor = db.query(
+                TABLE_IMAGES,
+                new String[]{COL_IMAGE_RESULT},
+                COL_ID + " = ?",
+                new String[]{String.valueOf(id)},
+                null,
+                null,
+                null,
+                "1"
+        );
+
+        try {
+            if (cursor != null && cursor.moveToFirst()) {
+                int columnIndex = cursor.getColumnIndex(COL_IMAGE_RESULT);
+                if (columnIndex >= 0 && !cursor.isNull(columnIndex)) {
+                    return cursor.getBlob(columnIndex);
+                }
             }
             return null;
         } finally {
@@ -125,11 +151,63 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         return count;
     }
 
+    public int getSyncedImagesCount() {
+        SQLiteDatabase db = getReadableDatabase();
+        // Count only images that are synced (sync_status = 1)
+        android.database.Cursor cursor = db.rawQuery(
+                "SELECT COUNT(" + COL_ID + ") FROM " + TABLE_IMAGES +
+                        " WHERE " + COL_SYNC_STATUS + " = 1",
+                null);
+        int count = 0;
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                count = cursor.getInt(0);
+            }
+            cursor.close();
+        }
+        return count;
+    }
+
     public boolean updateSyncStatus(long id, boolean synced) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COL_SYNC_STATUS, synced ? 1 : 0);
         int updated = db.update(TABLE_IMAGES, values, COL_ID + " = ?", new String[]{String.valueOf(id)});
         return updated > 0;
+    }
+
+    public java.util.List<CapturedImage> getSyncedImages() {
+        SQLiteDatabase db = getReadableDatabase();
+        // NOTE: Do not select full image blobs here; can exceed CursorWindow.
+        // We'll use image_blob for the original image display
+        String[] cols = {COL_ID, COL_IMAGE, COL_IMAGE_RESULT, COL_CREATED_AT, COL_SYNC_STATUS};
+        // Only get images where sync_status = 1 (synced)
+        android.database.Cursor cursor = db.query(
+                TABLE_IMAGES,
+                cols,
+                COL_SYNC_STATUS + " = ?",
+                new String[]{"1"},
+                null,
+                null,
+                COL_CREATED_AT + " DESC"
+        );
+
+        java.util.List<CapturedImage> items = new java.util.ArrayList<>();
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                long id = cursor.getLong(cursor.getColumnIndexOrThrow(COL_ID));
+                byte[] imageBlob = cursor.getBlob(cursor.getColumnIndexOrThrow(COL_IMAGE));
+                byte[] resultBlob = null;
+                int resultIndex = cursor.getColumnIndex(COL_IMAGE_RESULT);
+                if (resultIndex >= 0 && !cursor.isNull(resultIndex)) {
+                    resultBlob = cursor.getBlob(resultIndex);
+                }
+                long createdAt = cursor.getLong(cursor.getColumnIndexOrThrow(COL_CREATED_AT));
+                int syncStatus = cursor.getInt(cursor.getColumnIndexOrThrow(COL_SYNC_STATUS));
+                items.add(new CapturedImage(id, imageBlob, createdAt, syncStatus == 1, resultBlob));
+            }
+            cursor.close();
+        }
+        return items;
     }
 }

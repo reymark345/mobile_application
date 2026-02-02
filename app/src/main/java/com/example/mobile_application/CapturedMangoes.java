@@ -1,6 +1,9 @@
 package com.example.mobile_application;
 
+import android.app.Dialog;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -10,6 +13,10 @@ import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,7 +35,7 @@ public class CapturedMangoes extends AppCompatActivity {
     private static final String TAG = "CapturedMangoes";
     // TODO: Change this URL to your cloud server endpoint
 
-    private static final String SYNC_URL = "http://192.168.254.108:5000/api/upload";
+    private static final String SYNC_URL = "http://192.168.254.115:5000/api/upload";
 
     private RecyclerView recyclerView;
     private TextView emptyState;
@@ -59,8 +66,42 @@ public class CapturedMangoes extends AppCompatActivity {
         });
 
         adapter.setOnSyncClickListener(this::syncImageToServer);
+        adapter.setOnImageClickListener(this::showFullscreenImage);
 
         loadImages();
+    }
+
+    private void showFullscreenImage(CapturedImage item) {
+        // Create a custom dialog
+        Dialog dialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_fullscreen_image);
+
+        ImageView fullscreenImageView = dialog.findViewById(R.id.imgFullscreen);
+        ImageButton closeButton = dialog.findViewById(R.id.btnClose);
+
+        // Load the full image from database
+        byte[] fullImageBlob = dbHelper.getImageBlobById(item.getId());
+        if (fullImageBlob != null && fullImageBlob.length > 0) {
+            Bitmap bitmap = BitmapFactory.decodeByteArray(fullImageBlob, 0, fullImageBlob.length);
+            fullscreenImageView.setImageBitmap(bitmap);
+        } else {
+            // Fallback to image blob if full image is not available
+            byte[] imageBlob = item.getImageBlob();
+            if (imageBlob != null && imageBlob.length > 0) {
+                Bitmap bitmap = BitmapFactory.decodeByteArray(imageBlob, 0, imageBlob.length);
+                fullscreenImageView.setImageBitmap(bitmap);
+            }
+            Toast.makeText(this, "Full image not available", Toast.LENGTH_SHORT).show();
+        }
+
+        // Close button click listener
+        closeButton.setOnClickListener(v -> dialog.dismiss());
+
+        // Also allow tapping the image to close
+        fullscreenImageView.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
 
     private void syncImageToServer(CapturedImage item) {

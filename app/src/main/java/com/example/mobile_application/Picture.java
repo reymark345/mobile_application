@@ -227,8 +227,7 @@ public class Picture extends AppCompatActivity {
 
         // Store a resized JPEG (smaller than PNG, avoids CursorWindow crash)
         byte[] imageBytes = bitmapToJpegBytes(resizeBitmap(capturedBitmap, 1280), 85);
-        byte[] thumbBytes = bitmapToJpegBytes(resizeBitmap(capturedBitmap, 256), 75);
-        long id = dbHelper.insertImage(imageBytes, thumbBytes);
+        long id = dbHelper.insertImage(imageBytes);
 
         if (id != -1) {
             Toast.makeText(this, "Saved to Offline", Toast.LENGTH_SHORT).show();
