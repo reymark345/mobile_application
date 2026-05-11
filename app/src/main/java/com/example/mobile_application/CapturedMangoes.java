@@ -35,7 +35,8 @@ public class CapturedMangoes extends AppCompatActivity {
     private static final String TAG = "CapturedMangoes";
     // TODO: Change this URL to your cloud server endpoint
 
-    private static final String SYNC_URL = "http://192.168.254.115:5000/api/upload";
+    // private static final String SYNC_URL = "http://192.168.254.115:5000/api/upload";
+    private static final String SYNC_URL = "http://172.31.246.38:5000/api/upload";
 
     private RecyclerView recyclerView;
     private TextView emptyState;

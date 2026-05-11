@@ -1,9 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Allow cleartext HTTP only for local dev/test servers -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">192.168.254.108</domain>
-        <domain includeSubdomains="false">172.31.246.40</domain>
-        <domain includeSubdomains="false">192.168.254.115</domain>
-    </domain-config>
+
+<base-config cleartextTrafficPermitted="true" />
+
+<domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="true">10.0.2.2</domain>
+    <domain includeSubdomains="true">172.31.246.38</domain>
+</domain-config>
+
 </network-security-config>
+
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<network-security-config>-->
+<!--&lt;!&ndash; Allow cleartext HTTP only for local dev/test servers &ndash;&gt;-->
+<!--<domain-config cleartextTrafficPermitted="true">-->
+<!--    <domain includeSubdomains="false">192.168.254.108</domain>-->
+<!--    <domain includeSubdomains="false">172.31.246.40</domain>-->
+<!--    <domain includeSubdomains="false">192.168.254.115</domain>-->
+<!--</domain-config>-->
+<!--</network-security-config>-->

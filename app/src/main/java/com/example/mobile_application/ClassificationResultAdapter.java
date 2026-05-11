@@ -11,15 +11,16 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class ClassificationResultAdapter extends RecyclerView.Adapter<ClassificationResultAdapter.ResultViewHolder> {
 
     private final List<CapturedImage> items = new ArrayList<>();
-    private final DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault());
     private OnDeleteClickListener onDeleteClickListener;
     private OnImageClickListener onImageClickListener;
 
@@ -77,7 +78,7 @@ public class ClassificationResultAdapter extends RecyclerView.Adapter<Classifica
             holder.resultImageView.setImageResource(R.drawable.ic_launcher_foreground);
         }
 
-        String dateText = "Date Captured: " + dateFormat.format(new Date(item.getCreatedAt()));
+        String dateText = "Captured " + dateFormat.format(new Date(item.getCreatedAt()));
         holder.dateText.setText(dateText);
 
         holder.deleteButton.setOnClickListener(v -> {
