@@ -8,11 +8,12 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class ImageDbHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "thesis_images.db";
-    private static final int DB_VERSION = 5;
+    private static final int DB_VERSION = 6;
 
     public static final String TABLE_IMAGES = "images";
     public static final String COL_ID = "_id";
     public static final String COL_IMAGE = "image_blob";
+    public static final String COL_THUMBNAIL = "thumbnail_blob";
     public static final String COL_IMAGE_RESULT = "image_result_blob";
     public static final String COL_CREATED_AT = "created_at";
     public static final String COL_SYNC_STATUS = "sync_status";
@@ -26,6 +27,7 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         String sql = "CREATE TABLE " + TABLE_IMAGES + " ("
                 + COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COL_IMAGE + " BLOB NOT NULL, "
+                + COL_THUMBNAIL + " BLOB NOT NULL, "
                 + COL_IMAGE_RESULT + " BLOB, "
                 + COL_CREATED_AT + " INTEGER NOT NULL, "
                 + COL_SYNC_STATUS + " INTEGER NOT NULL DEFAULT 0"
@@ -40,10 +42,11 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    public long insertImage(byte[] imageBytes) {
+    public long insertImage(byte[] imageBytes, byte[] thumbnailBytes) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COL_IMAGE, imageBytes);
+        values.put(COL_THUMBNAIL, thumbnailBytes);
         values.put(COL_CREATED_AT, System.currentTimeMillis());
         values.put(COL_SYNC_STATUS, 0); // Not synced by default
         return db.insert(TABLE_IMAGES, null, values);
@@ -51,9 +54,7 @@ public class ImageDbHelper extends SQLiteOpenHelper {
 
     public java.util.List<CapturedImage> getAllImages() {
         SQLiteDatabase db = getReadableDatabase();
-        // NOTE: Do not select full image blobs here; can exceed CursorWindow.
-        // We'll use a smaller thumbnail version of image_blob for list display
-        String[] cols = {COL_ID, COL_IMAGE, COL_CREATED_AT, COL_SYNC_STATUS};
+        String[] cols = {COL_ID, COL_THUMBNAIL, COL_CREATED_AT, COL_SYNC_STATUS};
         // Only get images where sync_status = 0 (not synced)
         android.database.Cursor cursor = db.query(
                 TABLE_IMAGES,
@@ -69,10 +70,10 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         if (cursor != null) {
             while (cursor.moveToNext()) {
                 long id = cursor.getLong(cursor.getColumnIndexOrThrow(COL_ID));
-                byte[] imageBlob = cursor.getBlob(cursor.getColumnIndexOrThrow(COL_IMAGE));
+                byte[] thumbnailBlob = cursor.getBlob(cursor.getColumnIndexOrThrow(COL_THUMBNAIL));
                 long createdAt = cursor.getLong(cursor.getColumnIndexOrThrow(COL_CREATED_AT));
                 int syncStatus = cursor.getInt(cursor.getColumnIndexOrThrow(COL_SYNC_STATUS));
-                items.add(new CapturedImage(id, imageBlob, createdAt, syncStatus == 1));
+                items.add(new CapturedImage(id, thumbnailBlob, createdAt, syncStatus == 1));
             }
             cursor.close();
         }
@@ -178,9 +179,7 @@ public class ImageDbHelper extends SQLiteOpenHelper {
 
     public java.util.List<CapturedImage> getSyncedImages() {
         SQLiteDatabase db = getReadableDatabase();
-        // NOTE: Do not select full image blobs here; can exceed CursorWindow.
-        // We'll use image_blob for the original image display
-        String[] cols = {COL_ID, COL_IMAGE, COL_IMAGE_RESULT, COL_CREATED_AT, COL_SYNC_STATUS};
+        String[] cols = {COL_ID, COL_THUMBNAIL, COL_IMAGE_RESULT, COL_CREATED_AT, COL_SYNC_STATUS};
         // Only get images where sync_status = 1 (synced)
         android.database.Cursor cursor = db.query(
                 TABLE_IMAGES,
@@ -196,7 +195,7 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         if (cursor != null) {
             while (cursor.moveToNext()) {
                 long id = cursor.getLong(cursor.getColumnIndexOrThrow(COL_ID));
-                byte[] imageBlob = cursor.getBlob(cursor.getColumnIndexOrThrow(COL_IMAGE));
+                byte[] thumbnailBlob = cursor.getBlob(cursor.getColumnIndexOrThrow(COL_THUMBNAIL));
                 byte[] resultBlob = null;
                 int resultIndex = cursor.getColumnIndex(COL_IMAGE_RESULT);
                 if (resultIndex >= 0 && !cursor.isNull(resultIndex)) {
@@ -204,7 +203,7 @@ public class ImageDbHelper extends SQLiteOpenHelper {
                 }
                 long createdAt = cursor.getLong(cursor.getColumnIndexOrThrow(COL_CREATED_AT));
                 int syncStatus = cursor.getInt(cursor.getColumnIndexOrThrow(COL_SYNC_STATUS));
-                items.add(new CapturedImage(id, imageBlob, createdAt, syncStatus == 1, resultBlob));
+                items.add(new CapturedImage(id, thumbnailBlob, createdAt, syncStatus == 1, resultBlob));
             }
             cursor.close();
         }

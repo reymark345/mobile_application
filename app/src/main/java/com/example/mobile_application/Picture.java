@@ -25,6 +25,7 @@ import androidx.core.content.FileProvider;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 public class Picture extends AppCompatActivity {
 
@@ -33,6 +34,7 @@ public class Picture extends AppCompatActivity {
 
     private Bitmap capturedBitmap;
     private Uri photoUri; // URI for full-resolution camera photo
+    private Uri selectedImageUri;
 
     private ImageDbHelper dbHelper;
 
@@ -47,6 +49,7 @@ public class Picture extends AppCompatActivity {
                 if (result.getResultCode() == RESULT_OK && photoUri != null) {
                     try {
                         // Load full-resolution image from the file
+                        selectedImageUri = photoUri;
                         capturedBitmap = loadBitmapFromUri(photoUri);
                         imgPreview.setImageBitmap(capturedBitmap);
                         btnSync.setVisibility(android.view.View.VISIBLE);
@@ -64,6 +67,7 @@ public class Picture extends AppCompatActivity {
                     Uri imageUri = result.getData().getData();
                     if (imageUri != null) {
                         try {
+                            selectedImageUri = imageUri;
                             capturedBitmap = loadBitmapFromUri(imageUri);
                             imgPreview.setImageBitmap(capturedBitmap);
                             btnSync.setVisibility(android.view.View.VISIBLE);
@@ -220,14 +224,20 @@ public class Picture extends AppCompatActivity {
     }
 
     private void saveToSqlite() {
-        if (capturedBitmap == null) {
+        if (capturedBitmap == null || selectedImageUri == null) {
             Toast.makeText(this, "Capture or choose an image first.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Store a resized JPEG (smaller than PNG, avoids CursorWindow crash)
-        byte[] imageBytes = bitmapToJpegBytes(resizeBitmap(capturedBitmap, 1280), 85);
-        long id = dbHelper.insertImage(imageBytes);
+        long id;
+        try {
+            byte[] originalImageBytes = readBytesFromUri(selectedImageUri);
+            byte[] thumbnailBytes = bitmapToJpegBytes(resizeBitmap(capturedBitmap, 512), 80);
+            id = dbHelper.insertImage(originalImageBytes, thumbnailBytes);
+        } catch (IOException e) {
+            Toast.makeText(this, "Save failed: could not read original image.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         if (id != -1) {
             Toast.makeText(this, "Saved to Offline", Toast.LENGTH_SHORT).show();
@@ -241,12 +251,7 @@ public class Picture extends AppCompatActivity {
         imgPreview.setImageBitmap(null);
         btnSync.setVisibility(android.view.View.GONE);
         capturedBitmap = null;
-    }
-
-    private byte[] bitmapToPngBytes(Bitmap bitmap) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
-        return baos.toByteArray();
+        selectedImageUri = null;
     }
 
     private Bitmap resizeBitmap(Bitmap src, int maxSize) {
@@ -265,5 +270,21 @@ public class Picture extends AppCompatActivity {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, quality, baos);
         return baos.toByteArray();
+    }
+
+    private byte[] readBytesFromUri(Uri uri) throws IOException {
+        try (InputStream inputStream = getContentResolver().openInputStream(uri);
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            if (inputStream == null) {
+                throw new IOException("Unable to open image URI");
+            }
+
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                baos.write(buffer, 0, bytesRead);
+            }
+            return baos.toByteArray();
+        }
     }
 }

@@ -33,8 +33,9 @@ def upload_image():
         # Decode Base64 image
         image_bytes = base64.b64decode(image_base64)
         
-        # Save image to file
-        filename = f"mango_{image_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+        # Save image with an extension that matches the uploaded bytes.
+        extension = detect_image_extension(image_bytes)
+        filename = f"mango_{image_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{extension}"
         filepath = os.path.join(UPLOAD_FOLDER, filename)
         
         with open(filepath, 'wb') as f:
@@ -57,6 +58,17 @@ def upload_image():
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'ok'}), 200
+
+def detect_image_extension(image_bytes):
+    if image_bytes.startswith(b'\xff\xd8\xff'):
+        return '.jpg'
+    if image_bytes.startswith(b'\x89PNG\r\n\x1a\n'):
+        return '.png'
+    if image_bytes.startswith(b'RIFF') and image_bytes[8:12] == b'WEBP':
+        return '.webp'
+    if image_bytes.startswith(b'GIF87a') or image_bytes.startswith(b'GIF89a'):
+        return '.gif'
+    return '.bin'
 
 if __name__ == '__main__':
     print("\n" + "="*50)
