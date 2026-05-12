@@ -1,9 +1,7 @@
 package com.example.mobile_application;
 
 import android.app.Dialog;
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
@@ -40,9 +38,9 @@ import java.util.concurrent.Executors;
 public class CapturedMangoes extends AppCompatActivity {
 
     private static final String TAG = "CapturedMangoes";
-    private static final String BASE_URL = "http://10.0.2.2:5000";
+//    private static final String BASE_URL = "http://10.0.2.2:5000";
 
-//    private static final String BASE_URL = "http://192.168.254.115:5000";
+    private static final String BASE_URL = "http://192.168.254.106:5000";
 
     private static final String SYNC_URL = BASE_URL + "/api/upload";
 
@@ -179,7 +177,7 @@ public class CapturedMangoes extends AppCompatActivity {
                     }
 
                     String rowId = jsonObject.getString("id");
-                    downloadResultImage(rowId);
+                    downloadResultImage(rowId, item.getId());
 
                     runOnUiThread(() -> {
                         Toast.makeText(this, "Image synced and result saved!", Toast.LENGTH_SHORT).show();
@@ -223,7 +221,7 @@ public class CapturedMangoes extends AppCompatActivity {
         return responseBuilder.toString();
     }
 
-    private void downloadResultImage(String rowId) throws Exception {
+    private void downloadResultImage(String rowId, long localImageId) throws Exception {
         HttpURLConnection connection = null;
 
         try {
@@ -254,7 +252,7 @@ public class CapturedMangoes extends AppCompatActivity {
                 }
             }
 
-            updateImageResultBlob(rowId, buffer.toByteArray());
+            updateImageResultBlob(localImageId, buffer.toByteArray());
 
         } finally {
             if (connection != null) {
@@ -299,46 +297,55 @@ public class CapturedMangoes extends AppCompatActivity {
         emptyState.setVisibility(images.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
-    private void updateImageResultBlob(String rowId, byte[] imageBytes) {
-        try {
-            SQLiteDatabase db = openOrCreateDatabase(
-                    "thesis_images.db",
-                    MODE_PRIVATE,
-                    null
-            );
+    private void updateImageResultBlob(long localImageId, byte[] imageBytes) throws Exception {
+        byte[] thumbnailBytes = createThumbnailBytes(imageBytes);
+        boolean updated = dbHelper.updateImageResult(localImageId, imageBytes, thumbnailBytes);
 
-            ContentValues values = new ContentValues();
-            values.put("image_result_blob", imageBytes);
-            values.put("sync_status", 1);
-
-            int rowsUpdated = db.update(
-                    "images",
-                    values,
-                    "_id = ?",
-                    new String[]{rowId}
-            );
-
-            db.close();
-
-            runOnUiThread(() ->
-                    Toast.makeText(
-                            this,
-                            "Updated ID " + rowId + ", rows: " + rowsUpdated,
-                            Toast.LENGTH_LONG
-                    ).show()
-            );
-
-        } catch (Exception e) {
-            e.printStackTrace();
-
-            runOnUiThread(() ->
-                    Toast.makeText(
-                            this,
-                            "Error: " + e.getMessage(),
-                            Toast.LENGTH_LONG
-                    ).show()
-            );
+        if (!updated) {
+            throw new Exception("Local image row not found for ID " + localImageId);
         }
+    }
+
+    private byte[] createThumbnailBytes(byte[] imageBytes) {
+        if (imageBytes == null || imageBytes.length == 0) {
+            return null;
+        }
+
+        Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+        if (bitmap == null) {
+            return null;
+        }
+
+        Bitmap thumbnail = resizeBitmap(bitmap, 512);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        thumbnail.compress(Bitmap.CompressFormat.JPEG, 80, outputStream);
+
+        if (thumbnail != bitmap) {
+            thumbnail.recycle();
+        }
+        bitmap.recycle();
+
+        return outputStream.toByteArray();
+    }
+
+    private Bitmap resizeBitmap(Bitmap src, int maxSize) {
+        int width = src.getWidth();
+        int height = src.getHeight();
+
+        if (width <= 0 || height <= 0) {
+            return src;
+        }
+
+        int maxDimension = Math.max(width, height);
+        if (maxDimension <= maxSize) {
+            return src;
+        }
+
+        float scale = (float) maxSize / (float) maxDimension;
+        int resizedWidth = Math.max(1, Math.round(width * scale));
+        int resizedHeight = Math.max(1, Math.round(height * scale));
+
+        return Bitmap.createScaledBitmap(src, resizedWidth, resizedHeight, true);
     }
 
     @Override
