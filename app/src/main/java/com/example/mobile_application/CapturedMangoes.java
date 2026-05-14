@@ -40,7 +40,7 @@ public class CapturedMangoes extends AppCompatActivity {
     private static final String TAG = "CapturedMangoes";
 //    private static final String BASE_URL = "http://10.0.2.2:5000";
 
-    private static final String BASE_URL = "http://192.168.254.106:5000";
+    private static final String BASE_URL = "http://172.31.246.38:5000";
 
     private static final String SYNC_URL = BASE_URL + "/api/upload";
 

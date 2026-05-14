@@ -49,6 +49,11 @@ public class Dashboard extends AppCompatActivity {
             Intent intent = new Intent(Dashboard.this, ClassificationResult.class);
             startActivity(intent);
         });
+
+        findViewById(R.id.dashboardItem5).setOnClickListener(v -> {
+            Intent intent = new Intent(Dashboard.this, Settings.class);
+            startActivity(intent);
+        });
     }
 
     @Override
