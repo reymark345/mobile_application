@@ -11,8 +11,9 @@ import java.io.ByteArrayOutputStream;
 public class ImageDbHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "thesis_images.db";
-    private static final int DB_VERSION = 7;
+    private static final int DB_VERSION = 8;
     private static final int BLOB_CHUNK_SIZE = 512 * 1024;
+    public static final String DEFAULT_BASE_URL = "http://192.168.254.109";
 
     public static final String TABLE_IMAGES = "images";
     public static final String COL_ID = "_id";
@@ -23,12 +24,23 @@ public class ImageDbHelper extends SQLiteOpenHelper {
     public static final String COL_CREATED_AT = "created_at";
     public static final String COL_SYNC_STATUS = "sync_status";
 
+    public static final String TABLE_BASE_URLS = "base_urls";
+    public static final String COL_BASE_URL = "base_url";
+    public static final String COL_UPDATED_AT = "updated_at";
+    private static final long DEFAULT_BASE_URL_ID = 1;
+
     public ImageDbHelper(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+        createImagesTable(db);
+        createBaseUrlsTable(db);
+        insertDefaultBaseUrl(db);
+    }
+
+    private void createImagesTable(SQLiteDatabase db) {
         String sql = "CREATE TABLE " + TABLE_IMAGES + " ("
                 + COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COL_IMAGE + " BLOB NOT NULL, "
@@ -39,6 +51,23 @@ public class ImageDbHelper extends SQLiteOpenHelper {
                 + COL_SYNC_STATUS + " INTEGER NOT NULL DEFAULT 0"
                 + ");";
         db.execSQL(sql);
+    }
+
+    private void createBaseUrlsTable(SQLiteDatabase db) {
+        String sql = "CREATE TABLE IF NOT EXISTS " + TABLE_BASE_URLS + " ("
+                + COL_ID + " INTEGER PRIMARY KEY, "
+                + COL_BASE_URL + " TEXT NOT NULL, "
+                + COL_UPDATED_AT + " INTEGER NOT NULL"
+                + ");";
+        db.execSQL(sql);
+    }
+
+    private void insertDefaultBaseUrl(SQLiteDatabase db) {
+        ContentValues values = new ContentValues();
+        values.put(COL_ID, DEFAULT_BASE_URL_ID);
+        values.put(COL_BASE_URL, DEFAULT_BASE_URL);
+        values.put(COL_UPDATED_AT, System.currentTimeMillis());
+        db.insertWithOnConflict(TABLE_BASE_URLS, null, values, SQLiteDatabase.CONFLICT_IGNORE);
     }
 
     @Override
@@ -54,6 +83,11 @@ public class ImageDbHelper extends SQLiteOpenHelper {
             db.execSQL("ALTER TABLE " + TABLE_IMAGES
                     + " ADD COLUMN " + COL_RESULT_THUMBNAIL + " BLOB");
         }
+
+        if (oldVersion < 8) {
+            createBaseUrlsTable(db);
+            insertDefaultBaseUrl(db);
+        }
     }
 
     public long insertImage(byte[] imageBytes, byte[] thumbnailBytes) {
@@ -64,6 +98,47 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         values.put(COL_CREATED_AT, System.currentTimeMillis());
         values.put(COL_SYNC_STATUS, 0); // Not synced by default
         return db.insert(TABLE_IMAGES, null, values);
+    }
+
+    public String getBaseUrl() {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.query(
+                TABLE_BASE_URLS,
+                new String[]{COL_BASE_URL},
+                COL_ID + " = ?",
+                new String[]{String.valueOf(DEFAULT_BASE_URL_ID)},
+                null,
+                null,
+                null
+        );
+
+        try {
+            if (cursor != null && cursor.moveToFirst()) {
+                String baseUrl = cursor.getString(cursor.getColumnIndexOrThrow(COL_BASE_URL));
+                if (baseUrl != null && !baseUrl.trim().isEmpty()) {
+                    return baseUrl;
+                }
+            }
+            return DEFAULT_BASE_URL;
+        } finally {
+            if (cursor != null) cursor.close();
+        }
+    }
+
+    public boolean saveBaseUrl(String baseUrl) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COL_ID, DEFAULT_BASE_URL_ID);
+        values.put(COL_BASE_URL, baseUrl);
+        values.put(COL_UPDATED_AT, System.currentTimeMillis());
+
+        long rowId = db.insertWithOnConflict(
+                TABLE_BASE_URLS,
+                null,
+                values,
+                SQLiteDatabase.CONFLICT_REPLACE
+        );
+        return rowId != -1;
     }
 
     public java.util.List<CapturedImage> getAllImages() {

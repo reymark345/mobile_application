@@ -47,7 +47,7 @@
                         android:id="@+id/cc_CurrentPass"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:helperText="Required : eg. 192.31.246.38"
+                        app:helperText="Required : eg. http://192.31.246.38"
                         android:layout_marginTop="10dp"
                         android:layout_marginRight="10dp"
                         android:layout_marginLeft="10dp"
@@ -60,7 +60,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:id="@+id/edt_base_url"
-                            android:inputType="text" />
+                            android:inputType="textUri"
+                            android:singleLine="true" />
                     </com.google.android.material.textfield.TextInputLayout>
                     <Button
                         android:id="@+id/updateChangePassword"

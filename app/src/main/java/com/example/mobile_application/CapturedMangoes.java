@@ -8,6 +8,7 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Base64;
@@ -38,12 +39,7 @@ import java.util.concurrent.Executors;
 public class CapturedMangoes extends AppCompatActivity {
 
     private static final String TAG = "CapturedMangoes";
-//    private static final String BASE_URL = "http://10.0.2.2:5000";
-
-//    private static final String BASE_URL = "http://172.31.246.38:5000";
-    private static final String BASE_URL = "http://192.168.254.109:5000";
-
-    private static final String SYNC_URL = BASE_URL + "/api/upload";
+    private static final int SERVER_PORT = 5000;
 
     private RecyclerView recyclerView;
     private TextView emptyState;
@@ -142,7 +138,7 @@ public class CapturedMangoes extends AppCompatActivity {
 
                 System.setProperty("http.keepAlive", "false");
 
-                URL url = new URL(SYNC_URL);
+                URL url = new URL(buildServerUrl("/api/upload"));
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
                 connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
@@ -226,7 +222,7 @@ public class CapturedMangoes extends AppCompatActivity {
         HttpURLConnection connection = null;
 
         try {
-            URL url = new URL(BASE_URL + "/image?id=" + rowId);
+            URL url = new URL(buildServerUrl("/image?id=" + rowId));
 
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
@@ -260,6 +256,34 @@ public class CapturedMangoes extends AppCompatActivity {
                 connection.disconnect();
             }
         }
+    }
+
+    private String buildServerUrl(String path) {
+        Uri baseUri = Uri.parse(dbHelper.getBaseUrl());
+        String scheme = baseUri.getScheme();
+        String host = baseUri.getHost();
+
+        if (scheme == null || host == null) {
+            baseUri = Uri.parse(ImageDbHelper.DEFAULT_BASE_URL);
+            scheme = baseUri.getScheme();
+            host = baseUri.getHost();
+        }
+
+        String serverBaseUrl = new Uri.Builder()
+                .scheme(scheme)
+                .encodedAuthority(formatHostForAuthority(host) + ":" + SERVER_PORT)
+                .build()
+                .toString();
+
+        return serverBaseUrl + path;
+    }
+
+    private String formatHostForAuthority(String host) {
+        if (host.contains(":") && !host.startsWith("[")) {
+            return "[" + host + "]";
+        }
+
+        return host;
     }
 
     private boolean isInternetAvailable() {
