@@ -11,17 +11,17 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
-public class CapturedMangoAdapter extends RecyclerView.Adapter<CapturedMangoAdapter.MangoViewHolder> {
+public class ClassificationResultAdapter extends RecyclerView.Adapter<ClassificationResultAdapter.ResultViewHolder> {
 
     private final List<CapturedImage> items = new ArrayList<>();
-    private final DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault());
     private OnDeleteClickListener onDeleteClickListener;
-    private OnSyncClickListener onSyncClickListener;
     private OnImageClickListener onImageClickListener;
 
     public void submit(List<CapturedImage> data) {
@@ -36,10 +36,6 @@ public class CapturedMangoAdapter extends RecyclerView.Adapter<CapturedMangoAdap
         this.onDeleteClickListener = listener;
     }
 
-    public void setOnSyncClickListener(OnSyncClickListener listener) {
-        this.onSyncClickListener = listener;
-    }
-
     public void setOnImageClickListener(OnImageClickListener listener) {
         this.onImageClickListener = listener;
     }
@@ -48,34 +44,41 @@ public class CapturedMangoAdapter extends RecyclerView.Adapter<CapturedMangoAdap
         void onDeleteClick(CapturedImage item);
     }
 
-    public interface OnSyncClickListener {
-        void onSyncClick(CapturedImage item);
-    }
-
     public interface OnImageClickListener {
-        void onImageClick(CapturedImage item);
+        void onImageClick(CapturedImage item, boolean isResultImage);
     }
 
     @NonNull
     @Override
-    public MangoViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ResultViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_captured_mango, parent, false);
-        return new MangoViewHolder(view);
+                .inflate(R.layout.item_classification_result, parent, false);
+        return new ResultViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull MangoViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ResultViewHolder holder, int position) {
         CapturedImage item = items.get(position);
+        
+        // Display original image
         byte[] imageBlob = item.getImageBlob();
         if (imageBlob != null && imageBlob.length > 0) {
             Bitmap bitmap = BitmapFactory.decodeByteArray(imageBlob, 0, imageBlob.length);
-            holder.imageView.setImageBitmap(bitmap);
+            holder.originalImageView.setImageBitmap(bitmap);
         } else {
-            holder.imageView.setImageResource(R.drawable.ic_launcher_foreground);
+            holder.originalImageView.setImageResource(R.drawable.ic_launcher_foreground);
         }
 
-        String dateText = "Date Captured: " + dateFormat.format(new Date(item.getCreatedAt()));
+        // Display result image
+        byte[] resultBlob = item.getResultBlob();
+        if (resultBlob != null && resultBlob.length > 0) {
+            Bitmap resultBitmap = BitmapFactory.decodeByteArray(resultBlob, 0, resultBlob.length);
+            holder.resultImageView.setImageBitmap(resultBitmap);
+        } else {
+            holder.resultImageView.setImageResource(R.drawable.ic_launcher_foreground);
+        }
+
+        String dateText = "Captured " + dateFormat.format(new Date(item.getCreatedAt()));
         holder.dateText.setText(dateText);
 
         holder.deleteButton.setOnClickListener(v -> {
@@ -84,19 +87,15 @@ public class CapturedMangoAdapter extends RecyclerView.Adapter<CapturedMangoAdap
             }
         });
 
-        // Show/hide sync button based on whether listener is set
-        if (onSyncClickListener != null) {
-            holder.syncButton.setVisibility(View.VISIBLE);
-            holder.syncButton.setOnClickListener(v -> {
-                onSyncClickListener.onSyncClick(item);
-            });
-        } else {
-            holder.syncButton.setVisibility(View.GONE);
-        }
-
-        holder.imageView.setOnClickListener(v -> {
+        holder.originalImageView.setOnClickListener(v -> {
             if (onImageClickListener != null) {
-                onImageClickListener.onImageClick(item);
+                onImageClickListener.onImageClick(item, false);
+            }
+        });
+
+        holder.resultImageView.setOnClickListener(v -> {
+            if (onImageClickListener != null) {
+                onImageClickListener.onImageClick(item, true);
             }
         });
     }
@@ -106,18 +105,18 @@ public class CapturedMangoAdapter extends RecyclerView.Adapter<CapturedMangoAdap
         return items.size();
     }
 
-    static class MangoViewHolder extends RecyclerView.ViewHolder {
-        final ImageView imageView;
+    static class ResultViewHolder extends RecyclerView.ViewHolder {
+        final ImageView originalImageView;
+        final ImageView resultImageView;
         final TextView dateText;
         final ImageView deleteButton;
-        final ImageView syncButton;
 
-        MangoViewHolder(@NonNull View itemView) {
+        ResultViewHolder(@NonNull View itemView) {
             super(itemView);
-            imageView = itemView.findViewById(R.id.imgFood);
+            originalImageView = itemView.findViewById(R.id.imgOriginal);
+            resultImageView = itemView.findViewById(R.id.imgResult);
             dateText = itemView.findViewById(R.id.txtCcText);
             deleteButton = itemView.findViewById(R.id.btnDelete);
-            syncButton = itemView.findViewById(R.id.btnSync);
         }
     }
 }

@@ -4,12 +4,21 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
+
+
+import org.json.JSONObject;
+import android.util.Base64;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -37,8 +46,10 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Show splash for 2 seconds (2000 ms)
-        handler.postDelayed(goHomeRunnable, 500);
+//        handler.postDelayed(goHomeRunnable, 500);
+        handler.postDelayed(goHomeRunnable, 2000);
     }
+
 
     @Override
     protected void onDestroy() {

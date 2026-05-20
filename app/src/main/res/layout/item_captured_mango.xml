@@ -11,7 +11,10 @@
         android:layout_height="120dp"
         android:layout_marginEnd="12dp"
         android:scaleType="centerCrop"
-        android:src="@drawable/ic_launcher_foreground" />
+        android:src="@drawable/ic_launcher_foreground"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground" />
 
     <LinearLayout
         android:layout_width="0dp"
@@ -29,6 +32,18 @@
             android:textSize="14sp"
             android:fontFamily="sans-serif-medium" />
     </LinearLayout>
+
+    <ImageView
+        android:id="@+id/btnSync"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="8dp"
+        android:src="@android:drawable/ic_popup_sync"
+        android:contentDescription="Sync"
+        android:padding="6dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackgroundBorderless" />
 
     <ImageView
         android:id="@+id/btnDelete"
