@@ -11,7 +11,7 @@ import java.io.ByteArrayOutputStream;
 public class ImageDbHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "thesis_images.db";
-    private static final int DB_VERSION = 8;
+    private static final int DB_VERSION = 9;
     private static final int BLOB_CHUNK_SIZE = 512 * 1024;
     public static final String DEFAULT_BASE_URL = "http://192.168.254.109";
 
@@ -21,6 +21,7 @@ public class ImageDbHelper extends SQLiteOpenHelper {
     public static final String COL_THUMBNAIL = "thumbnail_blob";
     public static final String COL_IMAGE_RESULT = "image_result_blob";
     public static final String COL_RESULT_THUMBNAIL = "result_thumbnail_blob";
+    public static final String COL_RESULT_DETECTED = "result_detected";
     public static final String COL_CREATED_AT = "created_at";
     public static final String COL_SYNC_STATUS = "sync_status";
 
@@ -28,6 +29,15 @@ public class ImageDbHelper extends SQLiteOpenHelper {
     public static final String COL_BASE_URL = "base_url";
     public static final String COL_UPDATED_AT = "updated_at";
     private static final long DEFAULT_BASE_URL_ID = 1;
+
+    public static final String TABLE_DISEASE_TREATMENTS = "disease_treatments";
+    public static final String COL_DISEASE_TREATMENT_ID = "id";
+    public static final String COL_DISEASE_KEY = "disease_key";
+    public static final String COL_DISEASE_NAME = "disease_name";
+    public static final String COL_PREHARVEST_TREATMENT = "preharvest_treatment";
+    public static final String COL_POSTHARVEST_TREATMENT = "postharvest_treatment";
+    public static final String COL_SOURCE_URL = "source_url";
+    public static final String COL_TEXT_CITATION = "text_citation";
 
     public ImageDbHelper(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
@@ -37,6 +47,7 @@ public class ImageDbHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         createImagesTable(db);
         createBaseUrlsTable(db);
+        createDiseaseTreatmentsTable(db);
         insertDefaultBaseUrl(db);
     }
 
@@ -47,6 +58,7 @@ public class ImageDbHelper extends SQLiteOpenHelper {
                 + COL_THUMBNAIL + " BLOB NOT NULL, "
                 + COL_IMAGE_RESULT + " BLOB, "
                 + COL_RESULT_THUMBNAIL + " BLOB, "
+                + COL_RESULT_DETECTED + " VARCHAR, "
                 + COL_CREATED_AT + " INTEGER NOT NULL, "
                 + COL_SYNC_STATUS + " INTEGER NOT NULL DEFAULT 0"
                 + ");";
@@ -58,6 +70,19 @@ public class ImageDbHelper extends SQLiteOpenHelper {
                 + COL_ID + " INTEGER PRIMARY KEY, "
                 + COL_BASE_URL + " TEXT NOT NULL, "
                 + COL_UPDATED_AT + " INTEGER NOT NULL"
+                + ");";
+        db.execSQL(sql);
+    }
+
+    private void createDiseaseTreatmentsTable(SQLiteDatabase db) {
+        String sql = "CREATE TABLE IF NOT EXISTS " + TABLE_DISEASE_TREATMENTS + " ("
+                + COL_DISEASE_TREATMENT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + COL_DISEASE_KEY + " VARCHAR, "
+                + COL_DISEASE_NAME + " VARCHAR, "
+                + COL_PREHARVEST_TREATMENT + " LONGTEXT, "
+                + COL_POSTHARVEST_TREATMENT + " LONGTEXT, "
+                + COL_SOURCE_URL + " LONGTEXT, "
+                + COL_TEXT_CITATION + " VARCHAR"
                 + ");";
         db.execSQL(sql);
     }
@@ -87,6 +112,12 @@ public class ImageDbHelper extends SQLiteOpenHelper {
         if (oldVersion < 8) {
             createBaseUrlsTable(db);
             insertDefaultBaseUrl(db);
+        }
+
+        if (oldVersion < 9) {
+            db.execSQL("ALTER TABLE " + TABLE_IMAGES
+                    + " ADD COLUMN " + COL_RESULT_DETECTED + " VARCHAR");
+            createDiseaseTreatmentsTable(db);
         }
     }
 
