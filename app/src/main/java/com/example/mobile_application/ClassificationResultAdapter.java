@@ -23,6 +23,7 @@ public class ClassificationResultAdapter extends RecyclerView.Adapter<Classifica
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault());
     private OnDeleteClickListener onDeleteClickListener;
     private OnImageClickListener onImageClickListener;
+    private OnTreatmentClickListener onTreatmentClickListener;
 
     public void submit(List<CapturedImage> data) {
         items.clear();
@@ -40,12 +41,20 @@ public class ClassificationResultAdapter extends RecyclerView.Adapter<Classifica
         this.onImageClickListener = listener;
     }
 
+    public void setOnTreatmentClickListener(OnTreatmentClickListener listener) {
+        this.onTreatmentClickListener = listener;
+    }
+
     public interface OnDeleteClickListener {
         void onDeleteClick(CapturedImage item);
     }
 
     public interface OnImageClickListener {
         void onImageClick(CapturedImage item, boolean isResultImage);
+    }
+
+    public interface OnTreatmentClickListener {
+        void onTreatmentClick(CapturedImage item);
     }
 
     @NonNull
@@ -98,6 +107,14 @@ public class ClassificationResultAdapter extends RecyclerView.Adapter<Classifica
                 onImageClickListener.onImageClick(item, true);
             }
         });
+
+        View.OnClickListener treatmentClickListener = v -> {
+            if (onTreatmentClickListener != null) {
+                onTreatmentClickListener.onTreatmentClick(item);
+            }
+        };
+        holder.treatmentRow.setOnClickListener(treatmentClickListener);
+        holder.treatmentText.setOnClickListener(treatmentClickListener);
     }
 
     @Override
@@ -109,6 +126,8 @@ public class ClassificationResultAdapter extends RecyclerView.Adapter<Classifica
         final ImageView originalImageView;
         final ImageView resultImageView;
         final TextView dateText;
+        final TextView treatmentText;
+        final View treatmentRow;
         final ImageView deleteButton;
 
         ResultViewHolder(@NonNull View itemView) {
@@ -116,6 +135,8 @@ public class ClassificationResultAdapter extends RecyclerView.Adapter<Classifica
             originalImageView = itemView.findViewById(R.id.imgOriginal);
             resultImageView = itemView.findViewById(R.id.imgResult);
             dateText = itemView.findViewById(R.id.txtCcText);
+            treatmentText = itemView.findViewById(R.id.txtViewTreatment);
+            treatmentRow = itemView.findViewById(R.id.rowTreatment);
             deleteButton = itemView.findViewById(R.id.btnDelete);
         }
     }

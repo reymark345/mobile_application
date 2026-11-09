@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import base64
 import os
 from datetime import datetime
@@ -48,6 +48,7 @@ def upload_image():
         return jsonify({
             'success': True,
             'message': 'Image uploaded successfully',
+            'id': filename,
             'filename': filename
         }), 200
         
@@ -58,6 +59,19 @@ def upload_image():
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'ok'}), 200
+
+@app.route('/image', methods=['GET'])
+def get_image():
+    filename = request.args.get('id')
+    if not filename:
+        return jsonify({'error': 'Missing image id'}), 400
+
+    filepath = os.path.abspath(os.path.join(UPLOAD_FOLDER, os.path.basename(filename)))
+    upload_dir = os.path.abspath(UPLOAD_FOLDER)
+    if not filepath.startswith(upload_dir + os.sep) or not os.path.exists(filepath):
+        return jsonify({'error': 'Image not found'}), 404
+
+    return send_file(filepath)
 
 def detect_image_extension(image_bytes):
     if image_bytes.startswith(b'\xff\xd8\xff'):

@@ -11,6 +11,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -45,8 +46,24 @@ public class ClassificationResult extends AppCompatActivity {
         });
 
         adapter.setOnImageClickListener((item, isResultImage) -> showFullscreenImage(item, isResultImage));
+        adapter.setOnTreatmentClickListener(this::showTreatmentDialog);
 
         loadImages();
+    }
+
+    private void showTreatmentDialog(CapturedImage item) {
+        String message = "Recommended mango treatment:\n\n"
+                + "1. Remove and dispose of visibly infected leaves, fruit, and branches.\n"
+                + "2. Prune crowded branches to improve airflow and reduce moisture.\n"
+                + "3. Avoid overhead watering; keep fruit and leaves as dry as possible.\n"
+                + "4. Apply a suitable fungicide or copper-based treatment following the product label.\n"
+                + "5. Clean tools after pruning to prevent spreading disease.";
+
+        new AlertDialog.Builder(this)
+                .setTitle("Treatment")
+                .setMessage(message)
+                .setPositiveButton("OK", null)
+                .show();
     }
 
     private void showFullscreenImage(CapturedImage item, boolean isResultImage) {

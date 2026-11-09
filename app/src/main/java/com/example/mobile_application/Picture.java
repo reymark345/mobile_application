@@ -1,8 +1,10 @@
 package com.example.mobile_application;
 
 import android.Manifest;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.ImageDecoder;
 import android.net.Uri;
@@ -26,6 +28,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 public class Picture extends AppCompatActivity {
 
@@ -106,10 +109,10 @@ public class Picture extends AppCompatActivity {
                         pendingAction = PendingAction.GALLERY;
                     }
 
-                    if (hasRequiredPermissions()) {
+                    if (hasRequiredPermissions(pendingAction)) {
                         runPendingAction();
                     } else {
-                        requestRequiredPermissions();
+                        requestRequiredPermissions(pendingAction);
                     }
                 })
                 .setNegativeButton("Cancel", (d, w) -> {
@@ -131,13 +134,25 @@ public class Picture extends AppCompatActivity {
     private void openCamera() {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (intent.resolveActivity(getPackageManager()) != null) {
-            // Create a temporary file for the full-resolution photo
-            File photoFile = new File(getCacheDir(), "camera_photo_" + System.currentTimeMillis() + ".jpg");
-            photoUri = FileProvider.getUriForFile(this,
-                    getPackageName() + ".fileprovider",
-                    photoFile);
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
-            cameraLauncher.launch(intent);
+            try {
+                File photoFile = File.createTempFile("camera_photo_", ".jpg", getCacheDir());
+                photoUri = FileProvider.getUriForFile(this,
+                        getPackageName() + ".fileprovider",
+                        photoFile);
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+                intent.setClipData(ClipData.newUri(getContentResolver(), "Captured photo", photoUri));
+                intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+                List<ResolveInfo> cameraApps = getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+                for (ResolveInfo resolveInfo : cameraApps) {
+                    grantUriPermission(resolveInfo.activityInfo.packageName, photoUri,
+                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                }
+
+                cameraLauncher.launch(intent);
+            } catch (IOException | IllegalArgumentException e) {
+                Toast.makeText(this, "Could not prepare camera capture.", Toast.LENGTH_SHORT).show();
+            }
         } else {
             Toast.makeText(this, "No camera app found.", Toast.LENGTH_SHORT).show();
         }
@@ -158,42 +173,39 @@ public class Picture extends AppCompatActivity {
         }
     }
 
-    private boolean hasRequiredPermissions() {
+    private boolean hasRequiredPermissions(PendingAction action) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             return true; // Android 5.0 and below runtime permissions
         }
 
-        boolean camGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                == PackageManager.PERMISSION_GRANTED;
-
-        boolean readGranted;
-        if (Build.VERSION.SDK_INT >= 33) {
-            readGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)
-                    == PackageManager.PERMISSION_GRANTED;
-        } else {
-            readGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+        if (action == PendingAction.CAMERA) {
+            return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                     == PackageManager.PERMISSION_GRANTED;
         }
 
-        // If you only want to require storage permission for Gallery (not Camera),
-        // you can split these checks. This is simplest: require both.
-        return camGranted && readGranted;
+        if (action == PendingAction.GALLERY) {
+            if (Build.VERSION.SDK_INT >= 33) {
+                return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)
+                        == PackageManager.PERMISSION_GRANTED;
+            }
+
+            return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED;
+        }
+
+        return true;
     }
 
-    private void requestRequiredPermissions() {
+    private void requestRequiredPermissions(PendingAction action) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
 
         String[] perms;
-        if (Build.VERSION.SDK_INT >= 33) {
-            perms = new String[]{
-                    Manifest.permission.CAMERA,
-                    Manifest.permission.READ_MEDIA_IMAGES
-            };
+        if (action == PendingAction.CAMERA) {
+            perms = new String[]{Manifest.permission.CAMERA};
+        } else if (Build.VERSION.SDK_INT >= 33) {
+            perms = new String[]{Manifest.permission.READ_MEDIA_IMAGES};
         } else {
-            perms = new String[]{
-                    Manifest.permission.CAMERA,
-                    Manifest.permission.READ_EXTERNAL_STORAGE
-            };
+            perms = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
         }
 
         ActivityCompat.requestPermissions(this, perms, REQ_PERMS);
@@ -204,7 +216,7 @@ public class Picture extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         if (requestCode == REQ_PERMS) {
-            boolean allGranted = true;
+            boolean allGranted = grantResults.length > 0;
             for (int r : grantResults) {
                 if (r != PackageManager.PERMISSION_GRANTED) {
                     allGranted = false;

@@ -32,7 +32,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.ProtocolException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -173,7 +175,11 @@ public class CapturedMangoes extends AppCompatActivity {
                         throw new Exception(errorMessage);
                     }
 
-                    String rowId = jsonObject.getString("id");
+                    String rowId = jsonObject.optString("id", jsonObject.optString("filename", ""));
+                    if (rowId.isEmpty()) {
+                        throw new Exception("Server response missing result image id.");
+                    }
+
                     downloadResultImage(rowId, item.getId());
 
                     runOnUiThread(() -> {
@@ -222,7 +228,7 @@ public class CapturedMangoes extends AppCompatActivity {
         HttpURLConnection connection = null;
 
         try {
-            URL url = new URL(buildServerUrl("/image?id=" + rowId));
+            URL url = new URL(buildServerUrl("/image?id=" + URLEncoder.encode(rowId, "UTF-8")));
 
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
@@ -247,9 +253,26 @@ public class CapturedMangoes extends AppCompatActivity {
                 while ((bytesRead = inputStream.read(data)) != -1) {
                     buffer.write(data, 0, bytesRead);
                 }
+            } catch (ProtocolException e) {
+                if (buffer.size() == 0) {
+                    throw e;
+                }
+
+                Log.w(TAG, "Result image stream ended early; using received bytes.", e);
             }
 
-            updateImageResultBlob(localImageId, buffer.toByteArray());
+            byte[] imageBytes = buffer.toByteArray();
+            if (imageBytes.length == 0) {
+                throw new Exception("Downloaded result image is empty.");
+            }
+
+            Bitmap decodedImage = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+            if (decodedImage == null) {
+                throw new Exception("Downloaded result image is invalid.");
+            }
+            decodedImage.recycle();
+
+            updateImageResultBlob(localImageId, imageBytes);
 
         } finally {
             if (connection != null) {

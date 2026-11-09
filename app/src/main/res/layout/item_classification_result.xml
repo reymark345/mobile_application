@@ -93,5 +93,40 @@
             android:src="@android:drawable/ic_menu_delete"
             android:tint="@color/secondary_text" />
     </LinearLayout>
+    <LinearLayout
+        android:id="@+id/rowTreatment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingVertical="4dp">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_treatment"
+            android:tint="@color/secondary_text" />
+
+        <TextView
+            android:id="@+id/txtViewTreatment"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:ellipsize="end"
+            android:focusable="true"
+            android:fontFamily="sans-serif-medium"
+            android:maxLines="1"
+            android:text="View Treatment"
+            android:textColor="@color/primary_text"
+            android:textSize="14sp" />
+    </LinearLayout>
 
 </LinearLayout>
